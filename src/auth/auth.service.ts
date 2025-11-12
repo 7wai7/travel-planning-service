@@ -3,12 +3,18 @@ import type { Response } from 'express';
 import RegisterDto from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
 import LoginDto from './dto/login.dto';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private userService: UserService
+  ) {}
 
   async register(registerDto: RegisterDto) {
+    this.userService.create({...registerDto, hash_password: registerDto.password});
+    
     return this.generateToken({
         id: 1,
         username: registerDto.username
