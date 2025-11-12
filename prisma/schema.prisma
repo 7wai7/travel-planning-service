@@ -15,7 +15,7 @@ model User {
   createdAt     DateTime @default(now())
 
   trips         Trip[]
-  // tripParticipants TripParticipants[]
+  tripParticipants TripParticipants[]
 }
 
 model Trip {
@@ -29,23 +29,23 @@ model Trip {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // tripParticipants TripParticipants[]
+  tripParticipants TripParticipants[]
   // places           Place[]
 
   @@index([title])
 }
 
-// model TripParticipants {
-//   user_id Int
-//   user    User @relation(fields: [user_id], references: [id])
-//   trip_id Int
-//   trip    Trip @relation(fields: [trip_id], references: [id])
+model TripParticipants {
+  user_id Int
+  user    User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  trip_id Int
+  trip    Trip @relation(fields: [trip_id], references: [id], onDelete: Cascade)
 
-//   createdAt   DateTime  @default(now())
-//   role TripRole @default(COLLABORATOR)
+  createdAt   DateTime  @default(now())
+  role TripRole @default(COLLABORATOR)
 
-//   @@id([user_id, trip_id])
-// }
+  @@id([user_id, trip_id])
+}
 
 // model Place {
 //   id      Int  @id @default(autoincrement())
@@ -59,7 +59,7 @@ model Trip {
 //   @@index([locationName])
 // }
 
-// enum TripRole {
-//   OWNER
-//   COLLABORATOR
-// }
+enum TripRole {
+  OWNER
+  COLLABORATOR
+}
