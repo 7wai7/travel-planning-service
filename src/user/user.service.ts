@@ -36,11 +36,9 @@ export class UserService {
     });
   }
 
-  async findOne(data: Partial<Prisma.UserCreateInput>) {
+  async findOne(data: Partial<Prisma.UserWhereInput>) {
     return await this.prismaService.user.findFirst({
       where: data,
     });
   }
 }
-
-// npx neonctl@latest init

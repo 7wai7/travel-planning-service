@@ -13,4 +13,53 @@ model User {
   email         String   @unique
   hash_password String
   createdAt     DateTime @default(now())
+
+  trips         Trip[]
+  // tripParticipants TripParticipants[]
 }
+
+model Trip {
+  id          Int       @id @default(autoincrement())
+  owner       User      @relation(fields: [owner_id], references: [id])
+  owner_id    Int
+  title       String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // tripParticipants TripParticipants[]
+  // places           Place[]
+
+  @@index([title])
+}
+
+// model TripParticipants {
+//   user_id Int
+//   user    User @relation(fields: [user_id], references: [id])
+//   trip_id Int
+//   trip    Trip @relation(fields: [trip_id], references: [id])
+
+//   createdAt   DateTime  @default(now())
+//   role TripRole @default(COLLABORATOR)
+
+//   @@id([user_id, trip_id])
+// }
+
+// model Place {
+//   id      Int  @id @default(autoincrement())
+//   trip_id Int
+//   trip    Trip @relation(fields: [trip_id], references: [id])
+
+//   locationName String
+//   dayNumber    Int
+//   notes        String?
+
+//   @@index([locationName])
+// }
+
+// enum TripRole {
+//   OWNER
+//   COLLABORATOR
+// }
