@@ -1,0 +1,72 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Invitation to #{trip.title}
+    style.
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 640px;
+        margin: auto;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e6e6e6;
+      }
+      .header {
+        background: #0f62fe;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+      }
+      .content {
+        padding: 20px;
+        color: #1f2937;
+      }
+      .btn {
+        display: inline-block;
+        background: #0f62fe;
+        color: #fff;
+        padding: 12px 18px;
+        border-radius: 6px;
+        text-decoration: none;
+        margin-top: 12px;
+      }
+      .muted {
+        color: #6b7280;
+        font-size: 13px;
+      }
+  body
+    .container
+      .header
+        h1 Invitation to "#{trip.title}"
+      .content
+        p Hello #{name},
+        p You were invited to join the trip "#{trip.title}" by the trip owner.
+        if trip.description
+          p
+            | Description:
+            br
+            | #{trip.description}
+        if trip.startDate || trip.endDate
+          p
+            | Dates:
+            br
+            | #{trip.startDate ? (new Date(trip.startDate)).toLocaleString() : '—'} 
+            |  — 
+            | #{trip.endDate ? (new Date(trip.endDate)).toLocaleString() : '—'}
+        p
+          | To accept the invitation and access the trip, click the button below:
+        p
+          a.btn(href=inviteLink target="_blank" rel="noopener noreferrer") Open invitation
+        p.muted If the button doesn't work, copy & paste the link into your browser:
+        p.muted
+          a(href=inviteLink)= inviteLink
+        hr
+        p.muted This link will expire in 24 hours. If you didn't expect this email, you can ignore it.

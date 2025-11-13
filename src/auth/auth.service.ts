@@ -5,6 +5,7 @@ import RegisterDto from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
 import LoginDto from './dto/login.dto';
 import { UserService } from 'src/user/user.service';
+import { TokenUserData } from './types/tokenUserData';
 
 @Injectable()
 export class AuthService {
@@ -27,7 +28,8 @@ export class AuthService {
 
     return this.generateToken({
       id: user.id,
-      username: registerDto.username,
+      username: user.username,
+      email: user.email,
     });
   }
 
@@ -39,7 +41,8 @@ export class AuthService {
 
     return this.generateToken({
       id: user.id,
-      username: loginDto.username,
+      username: user.username,
+      email: user.email,
     });
   }
 
@@ -48,11 +51,10 @@ export class AuthService {
     res.end();
   }
 
-  generateToken(user: { id: number; username: string }) {
-    const userData = { id: user.id, username: user.username };
+  generateToken(user: TokenUserData) {
     return {
-      user: userData,
-      token: this.jwtService.sign(userData),
+      user,
+      token: this.jwtService.sign(user),
     };
   }
 }

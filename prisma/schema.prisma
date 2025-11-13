@@ -14,7 +14,7 @@ model User {
   hash_password String
   createdAt     DateTime @default(now())
 
-  trips         Trip[]
+  trips            Trip[]
   tripParticipants TripParticipants[]
 }
 
@@ -41,8 +41,8 @@ model TripParticipants {
   trip_id Int
   trip    Trip @relation(fields: [trip_id], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime  @default(now())
-  role TripRole @default(COLLABORATOR)
+  createdAt DateTime @default(now())
+  role      TripRole @default(COLLABORATOR)
 
   @@id([user_id, trip_id])
 }
@@ -58,6 +58,12 @@ model TripParticipants {
 
 //   @@index([locationName])
 // }
+
+model InvitationToken {
+  token     String   @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
 
 enum TripRole {
   OWNER

@@ -21,7 +21,7 @@ import type { TokenUserData } from 'src/auth/types/tokenUserData';
 export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
 
-  @Get('/:id')
+  @Get('/by-id/:id')
   @UseGuards(AuthGuard)
   async getTrip(
     @Param('id') id: string,
@@ -68,6 +68,12 @@ export class TripsController {
     });
   }
 
+  @Get('/invite')
+  @UseGuards(AuthGuard)
+  async invite(@ReqUser() user: TokenUserData, @Query('token') token: string) {
+    return await this.tripsService.invite(user.id, token);
+  }
+
   @Post()
   @UseGuards(AuthGuard)
   async create(
@@ -81,11 +87,22 @@ export class TripsController {
   }
 
   @Post('/collaborator')
+  @UseGuards(AuthGuard)
   async addCollaborator(
     @Query('userId') userId: number,
     @Query('tripId') tripId: number,
   ) {
     return await this.tripsService.addCollaborator(userId, tripId);
+  }
+
+  @Post('/:id/access')
+  @UseGuards(AuthGuard)
+  async access(
+    @ReqUser() user: TokenUserData,
+    @Param('id', ParseIntPipe) id: number, // trip id
+    @Query('email') email: string, // who to invite
+  ) {
+    return await this.tripsService.access(id, user.email, email);
   }
 
   @Delete('/:id')

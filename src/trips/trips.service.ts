@@ -1,10 +1,17 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { MailService } from 'src/mail/mail.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UserService } from 'src/user/user.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TripsService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private userService: UserService,
+    private mailService: MailService,
+  ) {}
 
   async create(data: Prisma.TripCreateInput) {
     if (data.startDate && data.endDate)
@@ -134,6 +141,51 @@ export class TripsService {
         owner: options.owner,
       },
     });
+  }
+
+  private tokens: Set<string> = new Set();
+
+  async invite(userId: number, token: string) {
+    if (this.tokens.has(token)) {
+      const tripId = token.split('-').pop();
+      if (!tripId) throw new HttpException('Trip does not exist', 404);
+
+      this.tokens.delete(token);
+      return await this.addCollaborator(userId, +tripId);
+    } else throw new HttpException({ message: 'Token not found' }, 400);
+  }
+
+  async access(tripId: number, smtpFrom: string, smtpTo: string) {
+    const user = await this.userService.findOne({ email: smtpTo });
+    if (!user) throw new NotFoundException('User not found');
+
+    const trip = await this.prismaService.trip.findUnique({
+      where: { id: tripId },
+    });
+    if (!trip) throw new NotFoundException('Trip not found');
+
+    const token = `${randomUUID()}-${tripId}`;
+    this.tokens.add(token);
+
+    const baseUrl =
+      process.env.FRONTEND_URL ||
+      process.env.APP_URL ||
+      'http://localhost:3000';
+    const inviteLink = `${baseUrl}/trips/invite?token=${encodeURIComponent(token)}`;
+
+    await this.mailService.sendEmail({
+      smtpFrom,
+      smtpTo,
+      subject: `Invite to trip: ${trip.title}`,
+      template: 'invite-trip-email',
+      context: {
+        name: user.username || user.email || 'friend',
+        trip,
+        inviteLink,
+      },
+    });
+
+    return token;
   }
 
   async deleteById(owner: number, id: number) {

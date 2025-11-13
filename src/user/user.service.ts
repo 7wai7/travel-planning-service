@@ -26,8 +26,6 @@ export class UserService {
       },
     });
 
-    console.log(existedUser);
-
     if (existedUser)
       throw new HttpException({ message: 'This user already exists' }, 400);
 
