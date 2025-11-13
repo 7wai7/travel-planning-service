@@ -12,7 +12,7 @@ export default class CreateTripDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(4)
-  @MaxLength(20)
+  @MaxLength(50)
   readonly title: string;
 
   @IsOptional()

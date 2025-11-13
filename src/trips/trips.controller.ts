@@ -29,10 +29,12 @@ export class TripsController {
     owner = false,
     @Query('participants', new ParseBoolPipe({ optional: true }))
     participants = false,
+    @Query('places', new ParseBoolPipe({ optional: true }))
+    places = false,
   ) {
     return await this.tripsService.findOne(
       { id: +id },
-      { owner, participants },
+      { owner, participants, places },
     );
   }
 
@@ -44,12 +46,14 @@ export class TripsController {
     owner = false,
     @Query('participants', new ParseBoolPipe({ optional: true }))
     participants = false,
+    @Query('places', new ParseBoolPipe({ optional: true }))
+    places = false,
   ) {
     return await this.tripsService.findMany(
       {
         owner_id: user.id,
       },
-      { owner, participants },
+      { owner, participants, places },
     );
   }
 
@@ -61,10 +65,13 @@ export class TripsController {
     owner = false,
     @Query('participants', new ParseBoolPipe({ optional: true }))
     participants = false,
+    @Query('places', new ParseBoolPipe({ optional: true }))
+    places = false,
   ) {
     return await this.tripsService.findUserParticipates(user.id, {
       owner,
       participants,
+      places
     });
   }
 

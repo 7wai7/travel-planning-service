@@ -1,5 +1,5 @@
 import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TripRole } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/user/user.service';
@@ -7,6 +7,14 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TripsService {
+  private ownerSelect = {
+    select: {
+      id: true,
+      username: true,
+      hash_password: false,
+    },
+  };
+
   constructor(
     private prismaService: PrismaService,
     private userService: UserService,
@@ -28,13 +36,8 @@ export class TripsService {
           },
         },
         include: {
-          owner: {
-            select: {
-              id: true,
-              username: true,
-              hash_password: false,
-            },
-          },
+          owner: this.ownerSelect,
+          places: true,
         },
       });
     } catch (e) {
@@ -55,7 +58,7 @@ export class TripsService {
         data: {
           trip: { connect: { id: tripId } },
           user: { connect: { id: userId } },
-          role: 'COLLABORATOR',
+          role: TripRole.COLLABORATOR,
         },
       });
     } catch (e) {
@@ -77,6 +80,7 @@ export class TripsService {
     options: {
       owner?: boolean;
       participants?: boolean;
+      places?: boolean;
     } = {},
   ) {
     try {
@@ -86,7 +90,8 @@ export class TripsService {
           tripParticipants: options.participants
             ? { include: { user: true } }
             : false,
-          owner: options.owner,
+          owner: options.owner ? this.ownerSelect : false,
+          places: options.places,
         },
       });
     } catch (e) {
@@ -105,6 +110,7 @@ export class TripsService {
     options: {
       owner?: boolean;
       participants?: boolean;
+      places?: boolean;
     } = {},
   ) {
     return await this.prismaService.trip.findMany({
@@ -113,7 +119,14 @@ export class TripsService {
         tripParticipants: options.participants
           ? { include: { user: true } }
           : false,
-        owner: options.owner,
+        owner: options.owner ? this.ownerSelect : false,
+        places: options.places
+          ? {
+              orderBy: {
+                dayNumber: "asc"
+              },
+            }
+          : false,
       },
     });
   }
@@ -123,6 +136,7 @@ export class TripsService {
     options: {
       owner?: boolean;
       participants?: boolean;
+      places?: boolean;
     } = {},
   ) {
     return await this.prismaService.trip.findMany({
@@ -138,7 +152,8 @@ export class TripsService {
         tripParticipants: options.participants
           ? { include: { user: true } }
           : false,
-        owner: options.owner,
+        owner: options.owner ? this.ownerSelect : false,
+        places: options.places,
       },
     });
   }

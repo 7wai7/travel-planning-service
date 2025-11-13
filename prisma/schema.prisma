@@ -30,7 +30,7 @@ model Trip {
   updatedAt   DateTime  @updatedAt
 
   tripParticipants TripParticipants[]
-  // places           Place[]
+  places           Place[]
 
   @@index([title])
 }
@@ -42,30 +42,25 @@ model TripParticipants {
   trip    Trip @relation(fields: [trip_id], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
-  role      TripRole @default(COLLABORATOR)
+  role      TripRole @default(USER)
 
   @@id([user_id, trip_id])
 }
 
-// model Place {
-//   id      Int  @id @default(autoincrement())
-//   trip_id Int
-//   trip    Trip @relation(fields: [trip_id], references: [id])
+model Place {
+  id      Int  @id @default(autoincrement())
+  trip_id Int
+  trip    Trip @relation(fields: [trip_id], references: [id], onDelete: Cascade)
 
-//   locationName String
-//   dayNumber    Int
-//   notes        String?
+  locationName String
+  dayNumber    Int
+  notes        String?
 
-//   @@index([locationName])
-// }
-
-model InvitationToken {
-  token     String   @id
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  @@index([locationName])
 }
 
 enum TripRole {
   OWNER
   COLLABORATOR
+  USER
 }
