@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseBoolPipe,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -84,5 +86,14 @@ export class TripsController {
     @Query('tripId') tripId: number,
   ) {
     return await this.tripsService.addCollaborator(userId, tripId);
+  }
+
+  @Delete('/:id')
+  @UseGuards(AuthGuard)
+  async delete(
+    @ReqUser() user: TokenUserData,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return await this.tripsService.deleteById(user.id, id);
   }
 }

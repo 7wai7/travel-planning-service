@@ -72,15 +72,25 @@ export class TripsService {
       participants?: boolean;
     } = {},
   ) {
-    return await this.prismaService.trip.findFirst({
-      where: data,
-      include: {
-        tripParticipants: options.participants
-          ? { include: { user: true } }
-          : false,
-        owner: options.owner,
-      },
-    });
+    try {
+      return await this.prismaService.trip.findFirst({
+        where: data,
+        include: {
+          tripParticipants: options.participants
+            ? { include: { user: true } }
+            : false,
+          owner: options.owner,
+        },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        switch (e.code) {
+          case 'P2025': // Not found
+            throw new HttpException('Trip does not exist', 400);
+        }
+      }
+      throw e;
+    }
   }
 
   async findMany(
@@ -124,6 +134,22 @@ export class TripsService {
         owner: options.owner,
       },
     });
+  }
+
+  async deleteById(owner: number, id: number) {
+    try {
+      await this.prismaService.trip.delete({
+        where: { owner_id: owner, id },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        switch (e.code) {
+          case 'P2025': // Not found
+            throw new HttpException('Trip does not exist', 400);
+        }
+      }
+      throw e;
+    }
   }
 
   checkDateRange(startDate: string | Date, endDate: string | Date) {
