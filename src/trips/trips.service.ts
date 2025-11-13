@@ -58,7 +58,7 @@ export class TripsService {
             throw new HttpException('User is already a collaborator', 400);
           case 'P2003': // Foreign key
           case 'P2025': // Not found
-            throw new HttpException('User or Trip does not exist', 400);
+            throw new HttpException('User or Trip does not exist', 404);
         }
       }
       throw e;
@@ -86,7 +86,7 @@ export class TripsService {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         switch (e.code) {
           case 'P2025': // Not found
-            throw new HttpException('Trip does not exist', 400);
+            throw new HttpException('Trip does not exist', 404);
         }
       }
       throw e;
@@ -145,7 +145,7 @@ export class TripsService {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         switch (e.code) {
           case 'P2025': // Not found
-            throw new HttpException('Trip does not exist', 400);
+            throw new HttpException('Trip does not exist', 404);
         }
       }
       throw e;
