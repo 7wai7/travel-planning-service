@@ -20,7 +20,15 @@ export class TripsService {
             create: [{ user: { connect: { id: ownerId } }, role: 'OWNER' }],
           },
         },
-        include: { tripParticipants: true },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              username: true,
+              hash_password: false,
+            },
+          },
+        },
       });
     } catch (e) {
       if (
@@ -46,11 +54,10 @@ export class TripsService {
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         switch (e.code) {
-          case 'P2002':
-            // Duplicate
+          case 'P2002': // Duplicate
             throw new HttpException('User is already a collaborator', 400);
-          case 'P2003':
-            // Foreign key
+          case 'P2003': // Foreign key
+          case 'P2025': // Not found
             throw new HttpException('User or Trip does not exist', 400);
         }
       }
@@ -58,10 +65,64 @@ export class TripsService {
     }
   }
 
-  async findMany(data: Partial<Prisma.TripWhereInput>) {
+  async findOne(
+    data: Partial<Prisma.TripWhereInput>,
+    options: {
+      owner?: boolean;
+      participants?: boolean;
+    } = {},
+  ) {
+    return await this.prismaService.trip.findFirst({
+      where: data,
+      include: {
+        tripParticipants: options.participants
+          ? { include: { user: true } }
+          : false,
+        owner: options.owner,
+      },
+    });
+  }
+
+  async findMany(
+    data: Partial<Prisma.TripWhereInput>,
+    options: {
+      owner?: boolean;
+      participants?: boolean;
+    } = {},
+  ) {
     return await this.prismaService.trip.findMany({
       where: data,
-      include: { tripParticipants: true },
+      include: {
+        tripParticipants: options.participants
+          ? { include: { user: true } }
+          : false,
+        owner: options.owner,
+      },
+    });
+  }
+
+  async findUserParticipates(
+    userId: number,
+    options: {
+      owner?: boolean;
+      participants?: boolean;
+    } = {},
+  ) {
+    return await this.prismaService.trip.findMany({
+      where: {
+        tripParticipants: {
+          some: {
+            user_id: userId,
+          },
+        },
+      },
+      include: {
+        // за потреби підвантажити учасників і власника
+        tripParticipants: options.participants
+          ? { include: { user: true } }
+          : false,
+        owner: options.owner,
+      },
     });
   }
 

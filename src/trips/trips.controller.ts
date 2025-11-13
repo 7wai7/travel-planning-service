@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseBoolPipe,
   Patch,
   Post,
   Query,
@@ -17,15 +19,55 @@ import type { TokenUserData } from 'src/auth/types/tokenUserData';
 export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
 
-  @Get('/my')
+  @Get('/:id')
   @UseGuards(AuthGuard)
-  async myTrips(@ReqUser() user: TokenUserData) {
-    return await this.tripsService.findMany({
-      owner_id: user.id,
+  async getTrip(
+    @Param('id') id: string,
+    @Query('owner', new ParseBoolPipe({ optional: true }))
+    owner = false,
+    @Query('participants', new ParseBoolPipe({ optional: true }))
+    participants = false,
+  ) {
+    return await this.tripsService.findOne(
+      { id: +id },
+      { owner, participants },
+    );
+  }
+
+  @Get('/my/trips')
+  @UseGuards(AuthGuard)
+  async myTrips(
+    @ReqUser() user: TokenUserData,
+    @Query('owner', new ParseBoolPipe({ optional: true }))
+    owner = false,
+    @Query('participants', new ParseBoolPipe({ optional: true }))
+    participants = false,
+  ) {
+    return await this.tripsService.findMany(
+      {
+        owner_id: user.id,
+      },
+      { owner, participants },
+    );
+  }
+
+  @Get('/my/trips/participating')
+  @UseGuards(AuthGuard)
+  async myTripsParticipates(
+    @ReqUser() user: TokenUserData,
+    @Query('owner', new ParseBoolPipe({ optional: true }))
+    owner = false,
+    @Query('participants', new ParseBoolPipe({ optional: true }))
+    participants = false,
+  ) {
+    return await this.tripsService.findUserParticipates(user.id, {
+      owner,
+      participants,
     });
   }
 
   @Post()
+  @UseGuards(AuthGuard)
   async create(
     @ReqUser() user: TokenUserData,
     @Body() createTripDto: CreateTripDto,
