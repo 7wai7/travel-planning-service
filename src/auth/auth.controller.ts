@@ -12,14 +12,16 @@ export class AuthController {
 
   @Post('register')
   async register(@Res() res: Response, @Body() registerDto: RegisterDto) {
-    const token = await this.authService.register(registerDto);
-    return this.setCookieToken(res, token);
+    const { user, token } = await this.authService.register(registerDto);
+    this.setCookieToken(res, token);
+    return res.json(user);
   }
 
   @Post('login')
   async login(@Res() res: Response, @Body() loginDto: LoginDto) {
-    const token = await this.authService.login(loginDto);
-    return this.setCookieToken(res, token);
+    const { user, token } = await this.authService.login(loginDto);
+    this.setCookieToken(res, token);
+    return res.json(user);
   }
 
   @Post('/logout')
@@ -34,7 +36,5 @@ export class AuthController {
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: this.tokenAge, // Cookie expiration in milliseconds (e.g., 1 hour)
     });
-
-    return res.status(200).end();
   }
 }

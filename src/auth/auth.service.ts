@@ -32,7 +32,9 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.userService.findOne({ username: loginDto.username });
+    const user = await this.userService.findOne({
+      username: loginDto.username,
+    });
     if (!user) throw new HttpException({ message: 'User not found' }, 404);
 
     return this.generateToken({
@@ -48,6 +50,9 @@ export class AuthService {
 
   generateToken(user: { id: number; username: string }) {
     const userData = { id: user.id, username: user.username };
-    return this.jwtService.sign(userData);
+    return {
+      user: userData,
+      token: this.jwtService.sign(userData),
+    };
   }
 }

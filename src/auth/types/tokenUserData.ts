@@ -1,0 +1,1 @@
+export type TokenUserData = { id: number; username: string }
