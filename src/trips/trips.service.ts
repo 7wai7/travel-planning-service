@@ -149,13 +149,19 @@ export class TripsService {
     if (this.tokens.has(token)) {
       const tripId = token.split('-').pop();
       if (!tripId) throw new HttpException('Trip does not exist', 404);
-
+      const res = await this.addCollaborator(userId, +tripId);
       this.tokens.delete(token);
-      return await this.addCollaborator(userId, +tripId);
+      return res;
     } else throw new HttpException({ message: 'Token not found' }, 400);
   }
 
   async access(tripId: number, smtpFrom: string, smtpTo: string) {
+    if (smtpFrom === smtpTo)
+      throw new HttpException(
+        { message: 'You cannot send an invitation to yourself' },
+        400,
+      );
+
     const user = await this.userService.findOne({ email: smtpTo });
     if (!user) throw new NotFoundException('User not found');
 
