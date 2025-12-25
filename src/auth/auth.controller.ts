@@ -1,8 +1,11 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import RegisterDto from './dto/register.dto';
 import LoginDto from './dto/login.dto';
+import { AuthGuard } from './auth.guard';
+import { ReqUser } from 'src/decorators/ReqUser';
+import type { TokenUserData } from './types/tokenUserData';
 
 @Controller('auth')
 export class AuthController {
@@ -24,9 +27,15 @@ export class AuthController {
     return res.json(user);
   }
 
-  @Post('/logout')
+  @Post('logout')
   logout(@Res() res: Response) {
     this.authService.logout(res);
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  me(@Res() res: Response, @ReqUser() user: TokenUserData) {
+    return res.json(user);
   }
 
   private setCookieToken(res: Response, token: string) {

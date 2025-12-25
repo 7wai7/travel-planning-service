@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   ParseBoolPipe,
   ParseIntPipe,
@@ -16,73 +17,71 @@ import CreateTripDto from './dto/create-trip.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ReqUser } from 'src/decorators/ReqUser';
 import type { TokenUserData } from 'src/auth/types/tokenUserData';
+import { TripRoleGuard } from 'src/guards/trip-role.guard';
+import { TripRole } from '@prisma/client';
+import { TripRoles } from 'src/decorators/trip-roles.decorator';
 
 @Controller('trips')
+@UseGuards(AuthGuard)
 export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
 
   @Get('/by-id/:id')
-  @UseGuards(AuthGuard)
   async getTrip(
     @Param('id') id: string,
-    @Query('owner', new ParseBoolPipe({ optional: true }))
-    owner = false,
-    @Query('participants', new ParseBoolPipe({ optional: true }))
-    participants = false,
-    @Query('places', new ParseBoolPipe({ optional: true }))
-    places = false,
+    @Query('include') include: string[] = [],
   ) {
-    return await this.tripsService.findOne(
+    const trip = await this.tripsService.findOne(
       { id: +id },
-      { owner, participants, places },
+      this.getPrismaInclude(include),
     );
+
+    if (!trip) throw new NotFoundException('Trip does not exist');
+    return trip;
   }
 
   @Get('/my/trips')
-  @UseGuards(AuthGuard)
   async myTrips(
     @ReqUser() user: TokenUserData,
-    @Query('owner', new ParseBoolPipe({ optional: true }))
-    owner = false,
-    @Query('participants', new ParseBoolPipe({ optional: true }))
-    participants = false,
-    @Query('places', new ParseBoolPipe({ optional: true }))
-    places = false,
+    @Query('include') include: string[] = [],
   ) {
     return await this.tripsService.findMany(
       {
         owner_id: user.id,
       },
-      { owner, participants, places },
+      this.getPrismaInclude(include),
     );
   }
 
   @Get('/my/trips/participating')
-  @UseGuards(AuthGuard)
   async myTripsParticipates(
     @ReqUser() user: TokenUserData,
-    @Query('owner', new ParseBoolPipe({ optional: true }))
-    owner = false,
-    @Query('participants', new ParseBoolPipe({ optional: true }))
-    participants = false,
-    @Query('places', new ParseBoolPipe({ optional: true }))
-    places = false,
+    @Query('include') include: string[] = [],
   ) {
-    return await this.tripsService.findUserParticipates(user.id, {
-      owner,
-      participants,
-      places
-    });
+    return await this.tripsService.findMany(
+      {
+        tripParticipants: {
+          some: {
+            user_id: user.id,
+          },
+        },
+      },
+      {
+        ...this.getPrismaInclude(include),
+        tripParticipants: {
+          where: { user_id: user.id },
+          select: { role: true },
+        },
+      },
+    );
   }
 
   @Get('/invite')
-  @UseGuards(AuthGuard)
   async invite(@ReqUser() user: TokenUserData, @Query('token') token: string) {
     return await this.tripsService.invite(user.id, token);
   }
 
   @Post()
-  @UseGuards(AuthGuard)
   async create(
     @ReqUser() user: TokenUserData,
     @Body() createTripDto: CreateTripDto,
@@ -93,31 +92,53 @@ export class TripsController {
     });
   }
 
-  @Post('/collaborator')
-  @UseGuards(AuthGuard)
+  @Post('/edit/:trip_id')
+  async edit(
+    @ReqUser() user: TokenUserData,
+    @Body() createTripDto: CreateTripDto,
+  ) {
+    return await this.tripsService.create({
+      ...createTripDto,
+      owner: { connect: { id: user.id } },
+    });
+  }
+
+  @Post('/:trip_id/collaborator')
+  @UseGuards(TripRoleGuard)
+  @TripRoles(TripRole.OWNER)
   async addCollaborator(
+    @Param('trip_id') tripId: number,
     @Query('userId') userId: number,
-    @Query('tripId') tripId: number,
   ) {
     return await this.tripsService.addCollaborator(userId, tripId);
   }
 
-  @Post('/:id/access')
-  @UseGuards(AuthGuard)
+  @Post('/:trip_id/access')
+  @UseGuards(TripRoleGuard)
+  @TripRoles(TripRole.OWNER)
   async access(
     @ReqUser() user: TokenUserData,
-    @Param('id', ParseIntPipe) id: number, // trip id
+    @Param('trip_id', ParseIntPipe) trip_id: number, // trip id
     @Query('email') email: string, // who to invite
   ) {
-    return await this.tripsService.access(id, user.email, email);
+    return await this.tripsService.access(trip_id, user.email, email);
   }
 
-  @Delete('/:id')
-  @UseGuards(AuthGuard)
+  @Delete('/:trip_id')
+  @UseGuards(TripRoleGuard)
+  @TripRoles(TripRole.OWNER)
   async delete(
     @ReqUser() user: TokenUserData,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('trip_id', ParseIntPipe) trip_id: number,
   ) {
-    return await this.tripsService.deleteById(user.id, id);
+    return await this.tripsService.deleteById(user.id, trip_id);
+  }
+
+  getPrismaInclude(include: string[]) {
+    const allowedIncludes = ['owner', 'tripParticipants', 'places'];
+
+    return Object.fromEntries(
+      allowedIncludes.map((key) => [key, include.includes(key)]),
+    );
   }
 }

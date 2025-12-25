@@ -39,6 +39,9 @@ export class AuthService {
     });
     if (!user) throw new HttpException({ message: 'User not found' }, 404);
 
+    const ok = await bcrypt.compare(loginDto.password, user.hash_password);
+    if (!ok) throw new HttpException({ message: 'Invalid password' }, 400);
+
     return this.generateToken({
       id: user.id,
       username: user.username,

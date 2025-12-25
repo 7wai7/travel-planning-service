@@ -1,6 +1,7 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { mapPrismaError } from 'src/utils/mapPrismaError';
 
 @Injectable()
 export class PlacesService {
@@ -17,13 +18,7 @@ export class PlacesService {
         data,
       });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        switch (e.code) {
-          case 'P2025': // Not found
-            throw new HttpException('Place does not exist', 404);
-        }
-      }
-      throw e;
+      mapPrismaError(e);
     }
   }
 
@@ -33,13 +28,7 @@ export class PlacesService {
         where: { id },
       });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        switch (e.code) {
-          case 'P2025': // Not found
-            throw new HttpException('Place does not exist', 404);
-        }
-      }
-      throw e;
+      mapPrismaError(e);
     }
   }
 }

@@ -4,6 +4,7 @@ import { MailService } from 'src/mail/mail.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { randomUUID } from 'crypto';
+import { mapPrismaError } from 'src/utils/mapPrismaError';
 
 @Injectable()
 export class TripsService {
@@ -38,17 +39,44 @@ export class TripsService {
         include: {
           owner: this.ownerSelect,
           places: true,
+          tripParticipants: {
+            where: { user_id: ownerId },
+            select: { role: true },
+          },
         },
       });
     } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === 'P2002'
-      ) {
-        const fields = (e.meta?.target as string[]).join(', ');
-        throw new HttpException(`Duplicate value in field(s): ${fields}`, 400);
-      }
-      throw e;
+      mapPrismaError(e);
+    }
+  }
+
+  async edit(id: number, data: Prisma.TripUpdateInput) {
+    const start = this.resolveDate(data.startDate);
+    const end = this.resolveDate(data.endDate);
+
+    if (start && end) {
+      this.checkDateRange(start, end);
+    }
+
+    const ownerId = data.owner?.connect?.id;
+
+    try {
+      return await this.prismaService.trip.update({
+        where: {
+          id,
+        },
+        data,
+        include: {
+          owner: this.ownerSelect,
+          places: true,
+          tripParticipants: {
+            where: { user_id: ownerId },
+            select: { role: true },
+          },
+        },
+      });
+    } catch (e) {
+      mapPrismaError(e);
     }
   }
 
@@ -77,83 +105,20 @@ export class TripsService {
 
   async findOne(
     data: Partial<Prisma.TripWhereInput>,
-    options: {
-      owner?: boolean;
-      participants?: boolean;
-      places?: boolean;
-    } = {},
+    include: Prisma.TripInclude,
   ) {
-    try {
-      return await this.prismaService.trip.findFirst({
-        where: data,
-        include: {
-          tripParticipants: options.participants
-            ? { include: { user: true } }
-            : false,
-          owner: options.owner ? this.ownerSelect : false,
-          places: options.places,
-        },
-      });
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        switch (e.code) {
-          case 'P2025': // Not found
-            throw new HttpException('Trip does not exist', 404);
-        }
-      }
-      throw e;
-    }
-  }
-
-  async findMany(
-    data: Partial<Prisma.TripWhereInput>,
-    options: {
-      owner?: boolean;
-      participants?: boolean;
-      places?: boolean;
-    } = {},
-  ) {
-    return await this.prismaService.trip.findMany({
+    return await this.prismaService.trip.findFirst({
       where: data,
-      include: {
-        tripParticipants: options.participants
-          ? { include: { user: true } }
-          : false,
-        owner: options.owner ? this.ownerSelect : false,
-        places: options.places
-          ? {
-              orderBy: {
-                dayNumber: "asc"
-              },
-            }
-          : false,
-      },
+      include,
     });
   }
 
-  async findUserParticipates(
-    userId: number,
-    options: {
-      owner?: boolean;
-      participants?: boolean;
-      places?: boolean;
-    } = {},
-  ) {
+  async findMany(where: Prisma.TripWhereInput, include: Prisma.TripInclude) {
     return await this.prismaService.trip.findMany({
-      where: {
-        tripParticipants: {
-          some: {
-            user_id: userId,
-          },
-        },
-      },
-      include: {
-        // за потреби підвантажити учасників і власника
-        tripParticipants: options.participants
-          ? { include: { user: true } }
-          : false,
-        owner: options.owner ? this.ownerSelect : false,
-        places: options.places,
+      where,
+      include,
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
@@ -215,14 +180,25 @@ export class TripsService {
         where: { owner_id: owner, id },
       });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        switch (e.code) {
-          case 'P2025': // Not found
-            throw new HttpException('Trip does not exist', 404);
-        }
-      }
-      throw e;
+      mapPrismaError(e);
     }
+  }
+
+  resolveDate(
+    value?:
+      | string
+      | Date
+      | Prisma.NullableDateTimeFieldUpdateOperationsInput
+      | null,
+  ): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string') return new Date(value);
+    if ('set' in value) {
+      return value.set ? new Date(value.set) : null;
+    }
+
+    return null;
   }
 
   checkDateRange(startDate: string | Date, endDate: string | Date) {
