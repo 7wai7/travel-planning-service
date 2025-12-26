@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { randomUUID } from 'crypto';
 import { mapPrismaError } from 'src/utils/mapPrismaError';
+import 'dotenv/config';
 
 @Injectable()
 export class TripsService {
@@ -90,16 +91,7 @@ export class TripsService {
         },
       });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        switch (e.code) {
-          case 'P2002': // Duplicate
-            throw new HttpException('User is already a collaborator', 400);
-          case 'P2003': // Foreign key
-          case 'P2025': // Not found
-            throw new HttpException('User or Trip does not exist', 404);
-        }
-      }
-      throw e;
+      mapPrismaError(e);
     }
   }
 
@@ -156,7 +148,7 @@ export class TripsService {
     const baseUrl =
       process.env.FRONTEND_URL ||
       process.env.APP_URL ||
-      'http://localhost:3000';
+      `http://localhost:${process.env.PORT || 4000}`;
     const inviteLink = `${baseUrl}/trips/invite?token=${encodeURIComponent(token)}`;
 
     await this.mailService.sendEmail({
