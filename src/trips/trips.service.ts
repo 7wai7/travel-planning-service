@@ -149,6 +149,7 @@ export class TripsService {
       process.env.FRONTEND_URL ||
       process.env.APP_URL ||
       `http://localhost:${process.env.PORT || 4000}`;
+
     const inviteLink = `${baseUrl}/trips/invite?token=${encodeURIComponent(token)}`;
 
     await this.mailService.sendEmail({
@@ -163,7 +164,10 @@ export class TripsService {
       },
     });
 
-    return token;
+    return {
+      token,
+      inviteLink,
+    };
   }
 
   async deleteById(owner: number, id: number) {
