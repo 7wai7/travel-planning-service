@@ -51,7 +51,7 @@ export class TripsService {
     }
   }
 
-  async edit(id: number, data: Prisma.TripUpdateInput) {
+  async update(id: number, data: Prisma.TripUpdateInput) {
     const start = this.resolveDate(data.startDate);
     const end = this.resolveDate(data.endDate);
 

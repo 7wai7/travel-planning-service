@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -92,13 +93,14 @@ export class TripsController {
     });
   }
 
-  @Post('/edit/:trip_id')
+  @Put('/:trip_id')
   async edit(
     @ReqUser() user: TokenUserData,
-    @Body() createTripDto: CreateTripDto,
+    @Param('trip_id') tripId: number,
+    @Body() updateTripDto: CreateTripDto,
   ) {
-    return await this.tripsService.create({
-      ...createTripDto,
+    return await this.tripsService.update(tripId, {
+      ...updateTripDto,
       owner: { connect: { id: user.id } },
     });
   }

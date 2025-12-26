@@ -17,8 +17,7 @@ export default class CreateTripDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(10)
-  @MaxLength(1000)
+  @MaxLength(5000)
   readonly description?: string;
 
   @IsOptional()
